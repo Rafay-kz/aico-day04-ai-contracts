@@ -1,5 +1,3 @@
-"""Parse and contract/schema validation only. Semantic rules live in semantic.py."""
-
 from __future__ import annotations
 
 import json
@@ -13,23 +11,26 @@ from aico.contracts.models import CitedAnswer, ResponseEnvelope
 
 LOGGER = logging.getLogger("aico.contracts.validator")
 
-# One bounded markdown unwrap: strip a single leading/trailing fence if the
-# entire payload is fenced. Arbitrary prose around JSON is not accepted.
+# One bounded markdown unwrap: strip a single fenced block only when both an
+# opening fence and a last-line closing fence are present. Arbitrary prose
+# around JSON is not accepted.
 _FENCE = "```"
 
 
 def unwrap_markdown_json(raw: str) -> str:
-    """Strip at most one markdown code fence. Documented bounded unwrap."""
+    """Strip at most one markdown code fence when the entire payload is fenced.
+
+    Both an opening fence and a closing fence are required. An opening fence
+    without a matching last-line closer is left unchanged (not unwrapped).
+    Arbitrary prose around JSON is not accepted.
+    """
     text = raw.strip()
     if not text.startswith(_FENCE):
         return text
     lines = text.splitlines()
-    if not lines:
+    if len(lines) < 2 or lines[-1].strip() != _FENCE:
         return text
-    body = lines[1:]
-    if body and body[-1].strip() == _FENCE:
-        body = body[:-1]
-    return "\n".join(body).strip()
+    return "\n".join(lines[1:-1]).strip()
 
 
 def parse_json(raw: str) -> dict[str, Any] | TypedFailure:
@@ -47,7 +48,6 @@ def parse_json(raw: str) -> dict[str, Any] | TypedFailure:
 
 
 def validate_cited_answer(payload: dict[str, Any]) -> CitedAnswer | TypedFailure:
-    """Schema-validate a parsed object. Does not run semantic rules."""
     try:
         return CitedAnswer.model_validate(payload)
     except ValidationError as exc:

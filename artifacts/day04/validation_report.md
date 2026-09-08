@@ -7,7 +7,7 @@ Generated schema paths (from Pydantic source models, not hand-written):
 - `contracts/schema/cited_answer.v1.schema.json`
 - `contracts/schema/response_envelope.v1.schema.json`
 
-Markdown-wrapped JSON uses **one bounded unwrap**: if the entire payload is a single fenced block, the fence is stripped once, then parsed. Arbitrary prose around JSON is rejected.
+Markdown-wrapped JSON uses **one bounded unwrap**: if the entire payload is a single fenced block with both an opening fence and a closing fence, the fence is stripped once, then parsed. An opening fence without a closer is not unwrapped. Arbitrary prose around JSON is rejected.
 
 Out-of-range criterion: fixture D04-08 uses an empty `chunk_id`, which violates `minLength: 1`.
 
@@ -86,6 +86,8 @@ Adding optional `warning` does **not** require a version bump.
 
 ## Tests
 
-Deterministic suite: `pytest -q` — Day 1–4 tests green. Failure paths use `FakeTransport`; they do not call Foundry.
+Deterministic suite: `pytest -q` — **151 passed** locally. SDK-isolation assertions compare POSIX path parts so the full suite is Windows-safe. The schema-drift test writes generated schema into a temporary directory and compares that output with the committed files under `contracts/schema/`. Failure paths use `FakeTransport`; they do not call Foundry.
+
+Markdown unwrap requires both an opening fence and a closing fence on the last line. An opening fence without a closer is left unchanged and fails parse.
 
 Live chat, when used, goes through the Model Gateway to `gpt-4.1-mini` on the Foundry Responses API. Secrets and full invalid model payloads are not written here.

@@ -76,7 +76,7 @@ pytest -q tests/test_model_gateway.py tests/test_model_gateway_retry.py tests/te
 
 ```text
 raw model text
-  → bounded markdown unwrap (one fence only)
+  → bounded markdown unwrap (opening and closing fence required)
   → parse JSON
   → contract / schema validation (Pydantic)
   → semantic validation (S1–S5)
@@ -85,7 +85,7 @@ raw model text
 
 If contract or semantic validation fails, **one** repair call may go through the Model Gateway. The repaired text is revalidated. Parse failures are non-repairable. Repair never loops.
 
-Markdown-wrapped JSON is accepted only when the entire payload is a single fenced block. Arbitrary prose around JSON is rejected.
+Markdown-wrapped JSON is accepted only when the entire payload is a single fenced block with both an opening fence and a closing fence. An incomplete fence is not unwrapped. Arbitrary prose around JSON is rejected.
 
 ## Layout
 

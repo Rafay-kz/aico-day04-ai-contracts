@@ -1,5 +1,3 @@
-"""One bounded repair attempt through the Day 3 Model Gateway. Never loops."""
-
 from __future__ import annotations
 
 import logging
@@ -41,14 +39,12 @@ _REPAIR_SYSTEM = (
 
 
 def is_repairable(failure: TypedFailure) -> bool:
-    """Parse failures are non-repairable. Contract and semantic failures may be repaired once."""
     if failure.repair_attempted:
         return False
     return failure.category in _REPAIRABLE and failure.repairable
 
 
 def build_repair_messages(original_raw: str, failure: TypedFailure) -> list[ChatMessage]:
-    """Ask the model to fix the output using the validation error, not an open-ended retry."""
     details = [
         f"failure_category={failure.category.value}",
         f"field_path={failure.field_path or '-'}",

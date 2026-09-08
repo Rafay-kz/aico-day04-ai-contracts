@@ -11,7 +11,7 @@ from aico.contracts.errors import FailureCategory, TypedFailure
 from aico.contracts.models import SCHEMA_DIR, SCHEMA_VERSION_V1, CitedAnswer, export_json_schemas
 from aico.contracts.semantic import validate_semantics
 from aico.contracts.service import ingest_cited_answer
-from aico.contracts.validator import parse_and_validate_cited_answer
+from aico.contracts.validator import parse_and_validate_cited_answer, unwrap_markdown_json
 
 FIXTURE_PATH = Path("tests/fixtures/day04/structured_output_cases.json")
 SRC_CONTRACTS = Path("src/aico/contracts")
@@ -45,6 +45,15 @@ def test_markdown_wrapped_json_uses_bounded_unwrap() -> None:
     result = ingest_cited_answer(case["raw"])
     assert isinstance(result, CitedAnswer)
     assert result.answer == "Policy applies."
+
+
+def test_incomplete_markdown_fence_is_not_unwrapped() -> None:
+    inner = _cases()["D04-01"]["raw"]
+    opening_only = "```json\n" + inner
+    assert unwrap_markdown_json(opening_only) == opening_only.strip()
+    result = parse_and_validate_cited_answer(opening_only)
+    assert isinstance(result, TypedFailure)
+    assert result.category == FailureCategory.PARSE
 
 
 def test_missing_required_field_is_contract_failure() -> None:
@@ -82,8 +91,8 @@ def test_out_of_range_constraint_is_enforced() -> None:
     assert result.field_path == "citations.0.chunk_id"
 
 
-def test_committed_schema_is_generated_from_source_model() -> None:
-    generated = export_json_schemas(SCHEMA_DIR)
+def test_committed_schema_is_generated_from_source_model(tmp_path: Path) -> None:
+    generated = export_json_schemas(tmp_path)
     for name, path in generated.items():
         committed = (SCHEMA_DIR / name).read_text(encoding="utf-8")
         assert path.read_text(encoding="utf-8") == committed
